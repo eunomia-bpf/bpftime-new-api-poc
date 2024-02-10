@@ -18,6 +18,7 @@ public:
   virtual int destroy_object(int object_id) = 0;
   // succ: 0
   virtual int instantiate_attach() = 0;
+  virtual int deinstantiate_attach() = 0;
 };
 } // namespace bpftime
 
