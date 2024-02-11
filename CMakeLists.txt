@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # C standard
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 
 #
 # Project details
@@ -17,13 +19,10 @@ project(
   LANGUAGES C CXX
 )
 
-add_library(
-  "bpftime-new-api-poc" 
-  SHARED 
-  ./nginx_module_attach_impl.cpp
-  ./attach_manager.cpp
-  ./base_attach_impl.cpp
-  ./base_event_provider.cpp
-  ./event_provider_impl.cpp
-  ./minimal_syscall_server.cpp
-  )
+add_subdirectory(./bpftime)
+
+add_library(nginx_module_attach_impl SHARED ./minimal_syscall_server.cpp ./nginx_module_attach_impl.cpp)
+
+add_dependencies(nginx_module_attach_impl bpftime-new-api-poc)
+target_link_libraries(nginx_module_attach_impl PRIVATE bpftime-new-api-poc)
+target_include_directories(nginx_module_attach_impl PRIVATE ./bpftime)

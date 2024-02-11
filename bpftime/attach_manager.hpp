@@ -22,6 +22,7 @@ struct attach_link_object {
   bool enabled = false;
 };
 struct unused_object {};
+// In the real bpftime, we may use an integer to distinguish attach target types, not an enumeration
 enum class attach_target_type {
   NGINX_URL_HANDLER,
 };
@@ -39,21 +40,29 @@ struct local_instantiated_bpftime_program {
   int run(const void *mem, size_t mem_size, uint64_t *ret);
 };
 struct attach_manager {
+private:
   // In bpftime, this should be stored in shm
   bpftime_shm_client shm;
   friend struct event_provider_impl;
   int next_id = 1;
   int allocate_id();
-  std::unique_ptr<base_attach_impl> nginx_attach_impl;
+  // std::unique_ptr<base_attach_impl> nginx_attach_impl;
+  std::map<attach_target_type, std::unique_ptr<base_attach_impl>> attach_impls;
   std::unique_ptr<base_event_provider> event_provider;
-  // attach link id -> local attach id
-  std::map<int, int> local_attach_records;
+  // attach link id -> (attach_target_type, local attach id)
+  std::map<int, std::pair<attach_target_type, int>> local_attach_records;
   // prog id -> local instantiated program
   std::map<int, std::unique_ptr<local_instantiated_bpftime_program>>
       local_instantiated_programs;
+
+public:
   attach_manager();
   base_event_provider *get_event_provider() const {
     return event_provider.get();
+  }
+  void register_attach_impl(attach_target_type ty,
+                            std::unique_ptr<base_attach_impl> &&impl) {
+    attach_impls.emplace(ty, std::move(impl));
   }
 };
 

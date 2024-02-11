@@ -3,6 +3,11 @@
 
 #include <cstddef>
 namespace bpftime {
+
+struct private_attach_data {
+  
+};
+
 class base_event_provider {
 public:
   // return: program object id

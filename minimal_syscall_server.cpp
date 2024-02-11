@@ -1,12 +1,17 @@
 #include "attach_manager.hpp"
+#include "nginx_module_attach_impl.hpp"
 #include <cassert>
 #include <memory>
 #include <optional>
+using namespace bpftime;
+
 static std::optional<std::unique_ptr<bpftime::attach_manager>> manager;
 
 extern "C" int bpftime__initialize_nginx_handler() {
   manager = std::make_unique<bpftime::attach_manager>();
   auto &man = *manager;
+  man->register_attach_impl(bpftime::attach_target_type::NGINX_URL_HANDLER,
+                            std::make_unique<nginx_module_attach_impl>());
   auto &provider = *man->get_event_provider();
   uint64_t insn = 0;
   int prog_id = provider.create_bpftime_program(&insn, 1, "my_prog", 0);

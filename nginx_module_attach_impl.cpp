@@ -1,4 +1,5 @@
 #include "nginx_module_attach_impl.hpp"
+#include "attach_manager.hpp"
 #include <cassert>
 #include <optional>
 using namespace bpftime;
@@ -25,4 +26,12 @@ int nginx_module_attach_impl::detach_by_id(int id) {
   handler = {};
   current_id = -1;
   return 0;
+}
+int nginx_module_attach_impl::handle_attach_with_link(
+    struct local_instantiated_bpftime_program *prog) {
+  return this->attach_url_handler([=](const char *url) -> bool {
+    uint64_t ret;
+    prog->run(url, 0, &ret);
+    return ret;
+  });
 }

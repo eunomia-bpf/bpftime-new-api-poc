@@ -1,6 +1,5 @@
 #include "event_provider_impl.hpp"
 #include "attach_manager.hpp"
-#include "nginx_module_attach_impl.hpp"
 #include <cassert>
 #include <iostream>
 #include <memory>
@@ -56,7 +55,8 @@ int event_provider_impl::instantiate_attach() {
 int event_provider_impl::deinstantiate_attach() {
   // Destroy attaches
   for (const auto &[k, v] : man->local_attach_records) {
-    man->nginx_attach_impl->detach_by_id(v);
+    // man->nginx_attach_impl->detach_by_id(v);
+    man->attach_impls[v.first]->detach_by_id(v.second);
   }
   man->local_attach_records.clear();
   man->local_instantiated_programs.clear();
@@ -83,20 +83,11 @@ int event_provider_impl::instantiate_id(int id, std::set<int> &instack) {
 
       auto &target =
           std::get<attach_target>(man->shm.objects[attach_link.target_id]);
-      if (target.type == attach_target_type::NGINX_URL_HANDLER) {
-        if (auto p = dynamic_cast<nginx_module_attach_impl *>(
-                man->nginx_attach_impl.get());
-            p) {
-          auto ptr =
-              man->local_instantiated_programs[attach_link.prog_id].get();
-          man->local_attach_records[id] =
-              p->attach_url_handler([=](const char *url) -> bool {
-                uint64_t ret;
-                ptr->run(url, 0, &ret);
-                return ret;
-              });
-        }
-      }
+      auto ptr = man->local_instantiated_programs[attach_link.prog_id].get();
+
+      man->local_attach_records[id] = std::make_pair(
+          target.type,
+          man->attach_impls[target.type]->handle_attach_with_link(ptr));
     }
   } else if (std::holds_alternative<bpftime_program_object>(obj)) {
     if (!man->local_instantiated_programs.contains(id)) {

@@ -8,6 +8,7 @@ class nginx_module_attach_impl : public base_attach_impl {
 public:
   int attach_url_handler(url_handler &&cb);
   int detach_by_id(int id);
+  int handle_attach_with_link(struct local_instantiated_bpftime_program *prog);
 
 private:
   int current_id = -1;
