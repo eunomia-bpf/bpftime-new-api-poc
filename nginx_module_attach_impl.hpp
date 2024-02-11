@@ -4,7 +4,7 @@
 #include <functional>
 namespace bpftime {
 using url_handler = std::function<bool(const char *)>;
-class nginx_module_attach_impl : base_attach_impl {
+class nginx_module_attach_impl : public base_attach_impl {
 public:
   int attach_url_handler(url_handler &&cb);
   int detach_by_id(int id);

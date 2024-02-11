@@ -19,6 +19,7 @@ public:
   // succ: 0
   virtual int instantiate_attach() = 0;
   virtual int deinstantiate_attach() = 0;
+  virtual ~base_event_provider() {}
 };
 } // namespace bpftime
 

@@ -1,8 +1,8 @@
 #ifndef _BPFTIME_ATTACH_MANAGER_H
 #define _BPFTIME_ATTACH_MANAGER_H
 #include "base_attach_impl.hpp"
+#include "base_event_provider.hpp"
 #include "event_provider_impl.hpp"
-#include "nginx_module_attach_impl.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -35,6 +35,7 @@ struct bpftime_shm_client {
   std::unordered_map<int, objects> objects;
 };
 struct local_instantiated_bpftime_program {
+  std::string name;
   int run(const void *mem, size_t mem_size, uint64_t *ret);
 };
 struct attach_manager {
@@ -44,12 +45,16 @@ struct attach_manager {
   int next_id = 1;
   int allocate_id();
   std::unique_ptr<base_attach_impl> nginx_attach_impl;
-  std::unique_ptr<event_provider_impl> event_provider;
+  std::unique_ptr<base_event_provider> event_provider;
   // attach link id -> local attach id
   std::map<int, int> local_attach_records;
   // prog id -> local instantiated program
   std::map<int, std::unique_ptr<local_instantiated_bpftime_program>>
       local_instantiated_programs;
+  attach_manager();
+  base_event_provider *get_event_provider() const {
+    return event_provider.get();
+  }
 };
 
 } // namespace bpftime

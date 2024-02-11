@@ -17,4 +17,13 @@ project(
   LANGUAGES C CXX
 )
 
-add_library("bpftime-new-api-poc" SHARED ./nginx_module_attach_impl.cpp)
+add_library(
+  "bpftime-new-api-poc" 
+  SHARED 
+  ./nginx_module_attach_impl.cpp
+  ./attach_manager.cpp
+  ./base_attach_impl.cpp
+  ./base_event_provider.cpp
+  ./event_provider_impl.cpp
+  ./minimal_syscall_server.cpp
+  )

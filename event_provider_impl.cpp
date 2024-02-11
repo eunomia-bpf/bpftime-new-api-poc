@@ -3,7 +3,9 @@
 #include "nginx_module_attach_impl.hpp"
 #include <cassert>
 #include <iostream>
+#include <memory>
 #include <ostream>
+#include <set>
 #include <variant>
 using namespace bpftime;
 int event_provider_impl::create_bpftime_program(const void *insn,
@@ -43,12 +45,24 @@ int event_provider_impl::destroy_object(int object_id) {
 }
 int event_provider_impl::instantiate_attach() {
   for (const auto &[k, v] : man->shm.objects) {
-    if (std::holds_alternative<attach_link_object>(v)) {
+    if (!std::holds_alternative<unused_object>(v)) {
+      std::set<int> instack;
+      if (int err = instantiate_id(k, instack); err < 0)
+        return err;
     }
   }
   return 0;
 }
-int event_provider_impl::deinstantiate_attach() {}
+int event_provider_impl::deinstantiate_attach() {
+  // Destroy attaches
+  for (const auto &[k, v] : man->local_attach_records) {
+    man->nginx_attach_impl->detach_by_id(v);
+  }
+  man->local_attach_records.clear();
+  man->local_instantiated_programs.clear();
+
+  return 0;
+}
 int event_provider_impl::instantiate_id(int id, std::set<int> &instack) {
   if (instack.contains(id)) {
     assert(false && "Look dependency detected");
@@ -58,7 +72,7 @@ int event_provider_impl::instantiate_id(int id, std::set<int> &instack) {
   if (std::holds_alternative<attach_link_object>(obj)) {
     const auto &attach_link = std::get<attach_link_object>(obj);
 
-    if (attach_link.enabled) {
+    if (attach_link.enabled && !man->local_attach_records.contains(id)) {
       std::cout << "Enable: " << id << std::endl;
       if (!man->local_instantiated_programs.contains(attach_link.prog_id)) {
         if (int err = instantiate_id(attach_link.prog_id, instack); err < 0)
@@ -75,13 +89,23 @@ int event_provider_impl::instantiate_id(int id, std::set<int> &instack) {
             p) {
           auto ptr =
               man->local_instantiated_programs[attach_link.prog_id].get();
-          p->attach_url_handler([&](const char *url) -> bool {
-            uint64_t ret;
-            ptr->run(url, 0, &ret);
-            return ret;
-          });
+          man->local_attach_records[id] =
+              p->attach_url_handler([=](const char *url) -> bool {
+                uint64_t ret;
+                ptr->run(url, 0, &ret);
+                return ret;
+              });
         }
       }
     }
+  } else if (std::holds_alternative<bpftime_program_object>(obj)) {
+    if (!man->local_instantiated_programs.contains(id)) {
+      man->local_instantiated_programs[id] =
+          std::make_unique<local_instantiated_bpftime_program>(
+              local_instantiated_bpftime_program{
+                  .name = std::get<bpftime_program_object>(obj).name});
+    }
   }
+  instack.erase(id);
+  return 0;
 }

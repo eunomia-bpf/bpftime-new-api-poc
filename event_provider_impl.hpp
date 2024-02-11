@@ -4,8 +4,11 @@
 #include <set>
 namespace bpftime {
 struct event_provider_impl : public base_event_provider {
+  friend class attach_manager;
+
 private:
   class attach_manager *man;
+
   event_provider_impl(class attach_manager *man) : man(man) {}
   int instantiate_id(int id, std::set<int> &instack);
 
