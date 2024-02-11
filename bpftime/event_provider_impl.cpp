@@ -12,7 +12,7 @@ int event_provider_impl::create_bpftime_program(const void *insn,
                                                 const char *prog_name,
                                                 int prog_type) {
   int id = man->allocate_id();
-  man->shm.objects.emplace(
+  man->shm.handlers.emplace(
       id,
       bpftime_program_handler{.insns = std::vector<uint64_t>(
                                  (uint64_t *)insn, (uint64_t *)insn + insn_cnt),
@@ -23,27 +23,27 @@ int event_provider_impl::create_bpftime_program(const void *insn,
 int event_provider_impl::attach_bpftime_program_at(int prog_id,
                                                    int attach_target_id) {
   int id = man->allocate_id();
-  man->shm.objects.emplace(id, attach_link_handler{.prog_id = prog_id,
+  man->shm.handlers.emplace(id, attach_link_handler{.prog_id = prog_id,
                                                   .target_id = attach_target_id,
                                                   .enabled = false});
   return id;
 }
 int event_provider_impl::enable_attach_link(int attach_link_id) {
-  std::get<attach_link_handler>(man->shm.objects[attach_link_id]).enabled = true;
+  std::get<attach_link_handler>(man->shm.handlers[attach_link_id]).enabled = true;
   return 0;
 }
 int event_provider_impl::create_nginx_url_handler_attach_target() {
   int id = man->allocate_id();
-  man->shm.objects.emplace(
+  man->shm.handlers.emplace(
       id, attach_target_handler{.type = attach_target_type::NGINX_URL_HANDLER});
   return id;
 }
 int event_provider_impl::destroy_object(int object_id) {
-  man->shm.objects.erase(object_id);
+  man->shm.handlers.erase(object_id);
   return 0;
 }
 int event_provider_impl::instantiate_attach() {
-  for (const auto &[k, v] : man->shm.objects) {
+  for (const auto &[k, v] : man->shm.handlers) {
     if (!std::holds_alternative<unused_handler>(v)) {
       std::set<int> instack;
       if (int err = instantiate_id(k, instack); err < 0)
@@ -68,7 +68,7 @@ int event_provider_impl::instantiate_id(int id, std::set<int> &instack) {
     assert(false && "Look dependency detected");
   }
   instack.insert(id);
-  auto &obj = man->shm.objects[id];
+  auto &obj = man->shm.handlers[id];
   if (std::holds_alternative<attach_link_handler>(obj)) {
     const auto &attach_link = std::get<attach_link_handler>(obj);
 
@@ -79,10 +79,10 @@ int event_provider_impl::instantiate_id(int id, std::set<int> &instack) {
           return err;
       }
       auto &prog = std::get<bpftime_program_handler>(
-          man->shm.objects[attach_link.prog_id]);
+          man->shm.handlers[attach_link.prog_id]);
 
       auto &target =
-          std::get<attach_target_handler>(man->shm.objects[attach_link.target_id]);
+          std::get<attach_target_handler>(man->shm.handlers[attach_link.target_id]);
       auto ptr = man->local_instantiated_programs[attach_link.prog_id].get();
 
       man->local_attach_records[id] = std::make_pair(

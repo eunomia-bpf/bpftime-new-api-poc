@@ -33,7 +33,7 @@ using handlers = std::variant<unused_handler, bpftime_program_handler,
                              attach_link_handler, attach_target_handler>;
 
 struct bpftime_shm_client {
-  std::unordered_map<int, handlers> objects;
+  std::unordered_map<int, handlers> handlers;
 };
 struct local_instantiated_bpftime_program {
   std::string name;
