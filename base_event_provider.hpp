@@ -13,7 +13,7 @@ public:
   // succ: return attach link object id
   virtual int enable_attach_link(int attach_link_id) = 0;
   // succ: return attach link object id
-  virtual int create_nginx_url_handler_attach_target(const char *url);
+  virtual int create_nginx_url_handler_attach_target();
   // succ: 0
   virtual int destroy_object(int object_id) = 0;
   // succ: 0
