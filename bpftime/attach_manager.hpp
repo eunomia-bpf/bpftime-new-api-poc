@@ -11,29 +11,29 @@
 #include <vector>
 namespace bpftime {
 
-struct bpftime_program_object {
+struct bpftime_program_handler {
   std::vector<uint64_t> insns;
   std::string name;
   int prog_type;
 };
-struct attach_link_object {
+struct attach_link_handler {
   int prog_id;
   int target_id;
   bool enabled = false;
 };
-struct unused_object {};
+struct unused_handler {};
 // In the real bpftime, we may use an integer to distinguish attach target types, not an enumeration
 enum class attach_target_type {
   NGINX_URL_HANDLER,
 };
-struct attach_target {
+struct attach_target_handler {
   attach_target_type type;
 };
-using objects = std::variant<unused_object, bpftime_program_object,
-                             attach_link_object, attach_target>;
+using handlers = std::variant<unused_handler, bpftime_program_handler,
+                             attach_link_handler, attach_target_handler>;
 
 struct bpftime_shm_client {
-  std::unordered_map<int, objects> objects;
+  std::unordered_map<int, handlers> objects;
 };
 struct local_instantiated_bpftime_program {
   std::string name;
